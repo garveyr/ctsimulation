@@ -1,0 +1,291 @@
+Read data
+```{r}
+data <- read.csv("/Users/##ENTER PATHWAY##/Garvey_data.csv")
+str(data)
+```
+
+## Multi panel Washita figure
+
+```{r}
+
+# Plot and simulation parameters
+
+#######################
+
+D <- data.frame(data$wash_width, data$wash_basewidth,
+                data$wash_neck, data$wash_haftlength,
+                data$wash_length, data$wash_midlength, 
+                data$wash_thick, data$wash_bladelength, 
+                data$wash_weight)
+
+# set counter to # variables (i.e., # figure rows)
+count <- c(1:9)       
+
+# set the attribute-specific n.measures
+n.measures <- c(162, 157,
+                249, 227,
+                136, 136,
+                259, 135,
+                87)
+
+# y-axis panel plot labels
+labs <- c("width\n(mm)", "base width\n(mm)",
+          "neck width\n(mm)", "haft length\n(mm)",
+          "length\n(mm)", "mid length\n(mm)",  
+          "thickness\n(mm)", "blade length\n(mm)",
+          "weight\n(g)")
+
+## simulation parameters
+set.seed(1212)            # set seed
+n.houses       <- 100     # set number of houses at site
+y              <- 1000    # set number of simulation runs
+
+## plotting parameters
+col.density   <- "gray80"   # set density color
+col.outline   <- "gray20"   # set density outline color
+col.mean      <- "black"    # set col for mean of arch sample
+cex.ylab      <- 1.2        # set y-axis label size
+cex.ylabtick  <- 1.1        # set y-axis tick label size
+cex.xlabtick  <- 1.1        # set x-axis tick label size
+
+x.lim2   <- c(6, 7,         # set x limit for each plot
+              3.5, 4,       # (this also affects tick mark placement)
+              50, 40,
+              1.4, 35,
+              0.12)
+
+y.lim2   <- c(1.2, 1,       # set y limit for each plot
+              1.75, 1.2,    
+              0.15, 0.15,
+              5, 0.15,
+              45)
+
+###############################
+
+# The plot:
+
+pdf(file="/Users/##ENTER DESTINATION##/Garvey_Figure3.pdf", 
+    height = 12, width = 12)
+
+par(mfcol = c(length(count), 3))
+par(oma = c (6, 10, 5, 2))
+
+# column 1 (SD = 0.1)
+
+for(x in count) {   # looping procedure for each plotting pannel
+
+SD       <- 0.1    # set standard deviation multiplier for random draws 
+d        <- na.omit(D[, x])     # select the data set to sample
+N        <- n.measures[x]       # select the appropriate n.measures
+
+metadig   <- NULL  #create empty vector to hold digs
+var.Kdigs <- NULL  #create empty vector to hold variances
+cv.Kdigs  <- NULL  #create empty vector to hold CVs
+
+for(i in 1:y) {    # "master" loop that  repeats
+                   # "archaeological sampling"" from 
+                   # "generational learning sample"" one thousand times
+
+    all.houses <-  NULL         # create an empty vector to hold results
+    
+    for(j in 1:n.houses) {       #loop through all houses       
+
+               house.seed <- sample(d, 1, replace = TRUE)   
+               house.g1 <- rnorm(4, mean = house.seed, 
+                                 sd = SD * mean(house.seed)) 
+               house.g2 <- rnorm(4, mean = mean(house.g1), 
+                                 sd = SD * mean(house.g1)) 
+               house.g3 <- rnorm(4, mean = mean(house.g2), 
+                                 sd = SD * mean(house.g2))
+               house.g4 <- rnorm(4, mean = mean(house.g3), 
+                                 sd = SD * mean(house.g3))
+               total.house.sample <- as.vector(c(house.g1,
+                                                  house.g2,
+                                                  house.g3,
+                                                  house.g4))
+           all.houses <- c(total.house.sample, all.houses)
+          
+        }
+           dig <- sample(all.houses, N, replace = TRUE)
+           metadig <- c(metadig, dig)
+           var.Kdigs <- c(var(dig), var.Kdigs)
+           cv.Kdigs <- c(sd(dig)/mean(dig), cv.Kdigs)
+}
+
+#plotting
+dp.md <- density(var.Kdigs)
+par(mai = c(0.25, 0.5, 0.1, 0))
+
+plot(dp.md, col = col.outline, bty = 'n',
+     main = "", xlab = "", ylab = "",
+     xlim = c (0, x.lim2[x]),
+     ylim = c (0, y.lim2[x]),
+     xaxt = "n", yaxt = "n")
+
+axis(1, at = c(0, 0.25 * x.lim2[x],
+               0.5 * x.lim2[x], 0.75 * x.lim2[x],
+               x.lim2[x]),
+     cex = cex.xlabtick)
+
+# alternative, with only 3 x-axis ticks
+# axis(1, at = c(0, 0.5 * x.lim2[x],
+#                x.lim2[x]),
+#      cex = cex.xlabtick)
+
+axis(2, at = c(0, 0.5 * y.lim2[x],
+               y.lim2[x]),
+     line = 1.5, las = 2,
+     cex = cex.ylabtick)
+
+polygon(dp.md, col = col.density)
+abline(v = var(d), col = col.mean, lwd = 2)
+mtext (text = labs[x], side = 2, 
+       las = 1, line = 5.5,
+       cex = 1.2, outer = FALSE)
+
+}
+
+mtext (text = "A. CV = 10%", side = 3, 
+       las = 1, line = 73,
+       cex = 1.5, outer = FALSE)
+
+
+# column 2 (CV = 5%)
+
+for(x in count) {   # looping procedure for each plotting pannel
+
+SD       <- 0.05    # set standard deviation multiplier for random draws 
+d        <- na.omit(D[, x])     # select the data set to sample
+N        <- n.measures[x]       # select the appropriate n.measures
+
+metadig   <- NULL  #create empty vector to hold digs
+var.Kdigs <- NULL  #create empty vector to hold variances
+cv.Kdigs  <- NULL  #create empty vector to hold CVs
+
+for(i in 1:y) {    # "master" loop that should repeat
+                   # "archaeological sampling"" from 
+                   # "generational learning sample"" one thousand times
+
+    all.houses <-  NULL         # create an empty vector to hold results
+    
+    for(j in 1:n.houses) {       #loop through all houses       
+
+               house.seed <- sample(d, 1, replace = TRUE)   
+               house.g1 <- rnorm(4, mean = house.seed, 
+                                 sd = SD * mean(house.seed)) 
+               house.g2 <- rnorm(4, mean = mean(house.g1), 
+                                 sd = SD * mean(house.g1)) 
+               house.g3 <- rnorm(4, mean = mean(house.g2), 
+                                 sd = SD * mean(house.g2))
+               house.g4 <- rnorm(4, mean = mean(house.g3), 
+                                 sd = SD * mean(house.g3))
+               total.house.sample <- as.vector(c(house.g1,
+                                                  house.g2,
+                                                  house.g3,
+                                                  house.g4))
+           all.houses <- c(total.house.sample, all.houses)
+          
+        }
+           dig <- sample(all.houses, N, replace = TRUE)
+           metadig <- c(metadig, dig)
+           var.Kdigs <- c(var(dig), var.Kdigs)
+           cv.Kdigs <- c(sd(dig)/mean(dig), cv.Kdigs)
+}
+
+#plotting
+dp.md <- density(var.Kdigs)
+par(mai = c(0.25, 0.5, 0.1, 0))
+
+plot(dp.md, col = col.outline, bty = 'n',
+     main = "", xlab = "", ylab = "",
+     xlim = c (0, x.lim2[x]),
+     ylim = c (0, y.lim2[x]),
+     xaxt = "n", yaxt = "n")
+
+axis(1, at = c(0, 0.25 * x.lim2[x],
+               0.5 * x.lim2[x], 0.75 * x.lim2[x],
+               x.lim2[x]),
+     cex = cex.xlabtick)
+
+
+polygon(dp.md, col = col.density)
+abline(v = var(d), col = col.mean, lwd = 2)
+
+}
+
+mtext (text = "B. CV = 5%", side = 3, 
+       las = 1, line = 73,
+       cex = 1.5, outer = FALSE)
+
+
+# column 3 (CV = 3%)
+
+for(x in count) {   # looping procedure for each plotting pannel
+
+SD       <- 0.03    # set standard deviation multiplier for random draws 
+d        <- na.omit(D[, x])     # select the data set to sample
+N        <- n.measures[x]       # select the appropriate n.measures
+
+metadig   <- NULL  #create empty vector to hold digs
+var.Kdigs <- NULL  #create empty vector to hold variances
+cv.Kdigs  <- NULL  #create empty vector to hold CVs
+
+for(i in 1:y) {    # "master" loop that should repeat
+                   # "archaeological sampling"" from 
+                   # "generational learning sample"" one thousand times
+
+    all.houses <-  NULL         # create an empty vector to hold results
+    
+    for(j in 1:n.houses) {       #loop through all houses       
+
+               house.seed <- sample(d, 1, replace = TRUE)   
+               house.g1 <- rnorm(4, mean = house.seed, 
+                                 sd = SD * mean(house.seed)) 
+               house.g2 <- rnorm(4, mean = mean(house.g1), 
+                                 sd = SD * mean(house.g1)) 
+               house.g3 <- rnorm(4, mean = mean(house.g2), 
+                                 sd = SD * mean(house.g2))
+               house.g4 <- rnorm(4, mean = mean(house.g3), 
+                                 sd = SD * mean(house.g3))
+               total.house.sample <- as.vector(c(house.g1,
+                                                  house.g2,
+                                                  house.g3,
+                                                  house.g4))
+           all.houses <- c(total.house.sample, all.houses)
+          
+        }
+           dig <- sample(all.houses, N, replace = TRUE)
+           metadig <- c(metadig, dig)
+           var.Kdigs <- c(var(dig), var.Kdigs)
+           cv.Kdigs <- c(sd(dig)/mean(dig), cv.Kdigs)
+}
+
+#plotting
+dp.md <- density(var.Kdigs)
+par(mai = c(0.25, 0.5, 0.1, 0))
+
+plot(dp.md, col = col.outline, bty = 'n',
+     main = "", xlab = "", ylab = "",
+     xlim = c (0, x.lim2[x]),
+     ylim = c (0, y.lim2[x]),
+     xaxt = "n", yaxt = "n")
+
+axis(1, at = c(0, 0.25 * x.lim2[x],
+               0.5 * x.lim2[x], 0.75 * x.lim2[x],
+               x.lim2[x]),
+     cex = cex.xlabtick)
+
+polygon(dp.md, col = col.density)
+abline(v = var(d), col = col.mean, lwd = 2)
+
+}
+
+mtext (text = "C. CV = 3%", side = 3, 
+       las = 1, line = 73,
+       cex = 1.5, outer = FALSE)
+
+
+dev.off()
+```
+
+

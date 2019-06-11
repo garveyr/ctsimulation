@@ -4,7 +4,7 @@ data <- read.csv("/Users/##ENTER PATHWAY##/Garvey_data.csv")
 str(data)
 ```
 
-## Multi panel Washita figure
+### Multi panel Washita figure
 
 ```{r}
 
